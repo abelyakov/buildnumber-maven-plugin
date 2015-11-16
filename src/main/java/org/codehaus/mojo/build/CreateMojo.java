@@ -60,6 +60,7 @@ import org.apache.maven.scm.provider.git.repository.GitScmProviderRepository;
 import org.apache.maven.scm.repository.ScmRepository;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * This mojo is designed to give you a build number. So when you might make 100 builds of version 1.0-SNAPSHOT, you can
@@ -202,6 +203,9 @@ public class CreateMojo
      */
     @Parameter( property = "maven.buildNumber.scmBranchPropertyName", defaultValue = "scmBranch" )
     private String scmBranchPropertyName;
+
+    @Parameter( property = "maven.buildNumber.scmPathsPropertyName", defaultValue = "scmPaths" )
+    private String scmPathsPropertyName;
 
 
     // ////////////////////////////////////// internal maven components ///////////////////////////////////
@@ -402,7 +406,7 @@ public class CreateMojo
             String timestamp = String.valueOf( now.getTime() );
             if ( timestampFormat != null )
             {
-                timestamp = MessageFormat.format( timestampFormat, new Object[] { now } );
+                timestamp = MessageFormat.format( timestampFormat, now);
             }
 
             getLog().info( MessageFormat.format( "Storing buildNumber: {0} at timestamp: {1}", new Object[] { revision,
@@ -417,13 +421,17 @@ public class CreateMojo
             getLog().info( "Storing buildScmBranch: " + scmBranch );
             project.getProperties().put( scmBranchPropertyName, scmBranch );
 
+            String scmPaths = getScmPaths();
+            getLog().info("Storing buildSmbPaths: " + scmPaths);
+            project.getProperties().put( scmPathsPropertyName, scmPaths );
+
             // Add the revision and timestamp properties to each project in the reactor
             if ( getRevisionOnlyOnce && reactorProjects != null )
             {
                 Iterator<MavenProject> projIter = reactorProjects.iterator();
                 while ( projIter.hasNext() )
                 {
-                    MavenProject nextProj = (MavenProject) projIter.next();
+                    MavenProject nextProj = projIter.next();
                     if ( revision != null )
                     {
                         nextProj.getProperties().put( this.buildNumberPropertyName, revision );
@@ -564,7 +572,7 @@ public class CreateMojo
     public String getScmBranch()
         throws MojoExecutionException
     {
-        /* git branch can be obtained directly by a command */
+        /* git or hg branch can be obtained directly by a command */
         try
         {
             ScmRepository repository = getScmRepository();
@@ -576,13 +584,44 @@ public class CreateMojo
                                                           (GitScmProviderRepository) repository.getProviderRepository(),
                                                           fileSet );
             }
+            if ( HgChangeSetMojo.PROTOCOL_HG.equals( provider.getScmType() ) )
+            {
+                HgChangeSetMojo hgmojo = new HgChangeSetMojo();
+                return hgmojo.getBranch( getLogger(), scmDirectory );
+            }
         }
         catch ( ScmException e )
         {
-            getLog().warn( "Cannot get the branch information from the git repository: \n" + e.getLocalizedMessage() );
+            getLog().warn( "Cannot get the branch information from the git or hg repository: \n" + e.getLocalizedMessage() );
         }
 
         return getScmBranchFromUrl();
+    }
+
+    public String getScmPaths() throws MojoExecutionException {
+                /* git or hg branch can be obtained directly by a command */
+        String paths = "";
+        try
+        {
+            ScmRepository repository = getScmRepository();
+            ScmProvider provider = scmManager.getProviderByRepository( repository );
+            if ( GitScmProviderRepository.PROTOCOL_GIT.equals( provider.getScmType() ) )
+            {
+                throw new NotImplementedException();
+            }
+            if ( HgChangeSetMojo.PROTOCOL_HG.equals( provider.getScmType() ) )
+            {
+                HgChangeSetMojo hgmojo = new HgChangeSetMojo();
+                return hgmojo.getPaths( getLogger(), scmDirectory );
+            }
+        }
+        catch ( ScmException e )
+        {
+            getLog().warn( "Cannot get the branch information from the git or hg repository: \n" + e.getLocalizedMessage() );
+        }
+
+        return paths;
+
     }
 
     private String getScmBranchFromUrl()

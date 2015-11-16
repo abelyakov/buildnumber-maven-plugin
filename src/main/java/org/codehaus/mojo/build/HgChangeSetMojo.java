@@ -48,6 +48,8 @@ import org.codehaus.plexus.util.StringUtils;
 public class HgChangeSetMojo
     extends AbstractMojo
 {
+    public static final String PROTOCOL_HG = "hg";
+
     /**
      * Whether to skip this execution.
      *
@@ -103,10 +105,13 @@ public class HgChangeSetMojo
             {
                 String changeSet = getChangeSet();
                 String changeSetDate = getChangeSetDate();
+                String branch = getBranch();
                 getLog().info( "Setting Mercurial Changeset: " + changeSet );
                 getLog().info( "Setting Mercurial Changeset Date: " + changeSetDate );
                 setChangeSetProperty( changeSet );
                 setChangeSetDateProperty( changeSetDate );
+                getLog().info( "Setting Mercurial Branch: " + branch );
+                setBranchProperty( branch );
             }
         }
         catch ( ScmException e )
@@ -133,6 +138,38 @@ public class HgChangeSetMojo
                 "\"{date|isodate}\"" } );
         checkResult( result );
         return consumer.getOutput();
+    }
+
+    protected String getBranch()
+           throws ScmException, MojoExecutionException
+    {
+        return getBranch( logger, scmDirectory );
+    }
+
+    protected String getBranch(ScmLogger scmLogger, File scmDirectory)
+          throws ScmException, MojoExecutionException
+    {
+        HgOutputConsumer consumer = new HgOutputConsumer( scmLogger );
+        ScmResult result = HgUtils.execute( consumer, scmLogger, scmDirectory, new String[] { "id", "-b" } );
+        checkResult( result );
+        return consumer.getOutput();
+    }
+
+    protected String getPaths(ScmLogger scmLogger, File scmDirectory) throws MojoExecutionException, ScmException {
+        HgOutputConsumer consumer = new HgOutputConsumer( scmLogger );
+        ScmResult result  = HgUtils.execute( consumer, scmLogger, scmDirectory, new String[] {"paths"});
+        checkResult( result );
+        return consumer.getOutput();
+    }
+
+    protected String getBranchProperty()
+    {
+        return getProperty( "branch" );
+    }
+
+    private void setBranchProperty( String branch )
+    {
+        setProperty( "branch", branch );
     }
 
     protected String getChangeSetDateProperty()
