@@ -21,21 +21,6 @@ package org.codehaus.mojo.build;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.MessageFormat;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -60,7 +45,14 @@ import org.apache.maven.scm.provider.git.repository.GitScmProviderRepository;
 import org.apache.maven.scm.repository.ScmRepository;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * This mojo is designed to give you a build number. So when you might make 100 builds of version 1.0-SNAPSHOT, you can
@@ -438,6 +430,7 @@ public class CreateMojo
                     }
                     nextProj.getProperties().put( this.timestampPropertyName, timestamp );
                     nextProj.getProperties().put( this.scmBranchPropertyName, scmBranch );
+                    nextProj.getProperties().put( this.scmPathsPropertyName, scmBranch );
                 }
             }
         }
@@ -607,7 +600,8 @@ public class CreateMojo
             ScmProvider provider = scmManager.getProviderByRepository( repository );
             if ( GitScmProviderRepository.PROTOCOL_GIT.equals( provider.getScmType() ) )
             {
-                throw new NotImplementedException();
+                //should return git remote -v result
+                return "";
             }
             if ( HgChangeSetMojo.PROTOCOL_HG.equals( provider.getScmType() ) )
             {
